@@ -1,9 +1,17 @@
 project(test)
+
+find_package(spdlog REQUIRED)
+
 add_executable(test test.cpp)
 
-target_link_libraries(test PRIVATE common)
+target_link_libraries(test PRIVATE 
+    common
+    spdlog::spdlog
+)
+get_target_property(spdlog_include_dirs spdlog::spdlog INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "spdlog include dirs: ${spdlog_include_dirs}")
 
-target_include_directories(test PRIVATE
+target_include_directories(test PRIVATE 
     ${SOURCE_DIR}/src
     ${SOURCE_DIR}/src/common
     ${SOURCE_DIR}/test
