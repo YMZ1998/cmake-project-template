@@ -52,14 +52,9 @@ void test_spdlog() {
 int main() {
   using namespace wlog;
 
-  char buffer[MAX_PATH];
-  GetModuleFileNameA(NULL, buffer, MAX_PATH);
-  auto exe_path = std::filesystem::path(buffer).parent_path();
-
   auto log_dir = GetExePath() / "logs";
   std::filesystem::create_directories(log_dir);
 
-  std::filesystem::create_directories(log_dir);  // 确保目录存在
   auto log_file = log_dir / "test.log";
   std::cout << "Log file path: " << log_file << std::endl;
 
@@ -68,13 +63,13 @@ int main() {
     return 1;
   }
 
-  STM_DEBUG() << "STM_DEBUG" << 1;
-  PRINT_WARN("PRINT_WARN, %d", 1);
+  STM_DEBUG() << "STM_DEBUG " << 1;
+  PRINT_WARN("PRINT_WARN %d", 1);
   LOG_INFO("LOG_INFO {}", 1);
 
   logger::get().set_level(spdlog::level::info);
   STM_DEBUG() << "STM_DEBUG " << 2;
-  PRINT_WARN("PRINT_WARN, %d", 2);
+  PRINT_WARN("PRINT_WARN %d", 2);
   LOG_INFO("LOG_INFO {}", 2);
 
   logger::get().shutdown();
