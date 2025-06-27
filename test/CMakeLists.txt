@@ -1,15 +1,18 @@
-include_directories("${PROJECT_SOURCE_DIR}/test")
-include_directories("${PROJECT_SOURCE_DIR}/src")
-
 project(test)
-
-add_compile_options("/std:c++17")
-
-add_definitions(-D_BIND_TO_CURRENT_VCLIBS_VERSION=1)
-add_definitions(-D_UNICODE -DUNICODE)
-
 add_executable(test test.cpp)
 
-target_link_libraries(test
+target_link_libraries(test PRIVATE common)
+
+target_include_directories(test PRIVATE
+    ${SOURCE_DIR}/src
+    ${SOURCE_DIR}/src/common
+    ${SOURCE_DIR}/test
 )
 
+target_compile_features(test PRIVATE cxx_std_17)
+
+target_compile_definitions(test PRIVATE
+    _UNICODE
+    UNICODE
+    _BIND_TO_CURRENT_VCLIBS_VERSION=1
+)

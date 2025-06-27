@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 cmake_policy(SET CMP0079 NEW)
 
-project(cmake-project-template LANGUAGES C CXX CUDA)
+project(cmake-project-template LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,7 +16,10 @@ foreach(type RUNTIME LIBRARY ARCHIVE)
   set(CMAKE_${type}_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR})
 endforeach()
 
-set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR})
+set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
+set(SOURCE_DIR ${PROJECT_SOURCE_DIR})
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON) 
 
 if(MSVC)
   add_compile_options(/MP /wd4251)
@@ -41,5 +44,13 @@ set(CUDA_NVCC_FLAGS_RELEASE "-O3 -Xcompiler=/MD")
 set(CUDA_NVCC_FLAGS_DEBUG "-G -g -Xcompiler=/MDd")
 
 add_subdirectory(src)
-add_subdirectory(test)
-add_subdirectory(unit_tests)
+
+option(build_test "Build test" OFF)
+if(build_test)
+    add_subdirectory(test)
+endif(build_test)
+
+option(build_unit_tests "Build unit_tests" OFF)
+if(build_unit_tests)
+    add_subdirectory(unit_tests)
+endif(build_unit_tests)
