@@ -4,6 +4,7 @@
 #include "argparse.hpp"
 #include "common.h"
 #include "logger.hpp"
+#include "json.hpp"
 
 int main1(int argc, char* argv[]) {
   argparse::ArgumentParser program("program_name");
@@ -77,7 +78,7 @@ int test_wlog() {
   return 0;
 }
 
-int main() {
+int test_taskflow() {
 
   tf::Executor executor;
   tf::Taskflow taskflow;
@@ -90,6 +91,36 @@ int main() {
   D.succeed(B, C);  // D runs after  B and C
 
   executor.run(taskflow).wait();
+
+  return 0;
+}
+
+
+
+int main() {
+  using json = nlohmann::json;
+
+  json person = {{"name", "Alice"},
+                 {"age", 30},
+                 {"is_student", false},
+                 {"skills", {"C++", "Python", "CUDA"}}};
+
+  std::cout << "Original JSON:\n" << person.dump(4) << std::endl;
+
+  person["age"] = 31;
+  person["skills"].push_back("Machine Learning");
+
+  std::string name = person["name"];
+  int age = person["age"];
+  bool is_student = person["is_student"];
+
+  std::cout << "\nUpdated name: " << name << "\nUpdated age: " << age
+            << "\nIs student? " << std::boolalpha << is_student << std::endl;
+
+  std::string json_str = person.dump();
+
+  json parsed = json::parse(json_str);
+  std::cout << "\nParsed from string:\n" << parsed.dump(2) << std::endl;
 
   return 0;
 }

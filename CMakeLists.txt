@@ -21,6 +21,8 @@ set(3rdparty ${PROJECT_SOURCE_DIR}/3rdparty)
 message(STATUS "3rdparty: ${3rdparty}")
 
 include_directories(${3rdparty}/taskflow)
+include_directories(${3rdparty}/nlohmann)
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(MSVC)
