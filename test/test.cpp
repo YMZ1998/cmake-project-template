@@ -1,8 +1,9 @@
 #include <windows.h>
 #include <iostream>
+#include <taskflow.hpp>  // Taskflow is header-only
 #include "argparse.hpp"
-#include "logger.hpp"
 #include "common.h"
+#include "logger.hpp"
 
 int main1(int argc, char* argv[]) {
   argparse::ArgumentParser program("program_name");
@@ -49,7 +50,7 @@ void test_spdlog() {
   SPDLOG_DEBUG("Some debug message");
 }
 
-int main() {
+int test_wlog() {
   using namespace wlog;
 
   auto log_dir = GetExePath() / "logs";
@@ -73,5 +74,22 @@ int main() {
   LOG_INFO("LOG_INFO {}", 2);
 
   logger::get().shutdown();
+  return 0;
+}
+
+int main() {
+
+  tf::Executor executor;
+  tf::Taskflow taskflow;
+
+  auto [A, B, C, D] = taskflow.emplace(  // create four tasks
+      []() { std::cout << "TaskA\n"; }, []() { std::cout << "TaskB\n"; },
+      []() { std::cout << "TaskC\n"; }, []() { std::cout << "TaskD\n"; });
+
+  A.precede(B, C);  // A runs before B and C
+  D.succeed(B, C);  // D runs after  B and C
+
+  executor.run(taskflow).wait();
+
   return 0;
 }
