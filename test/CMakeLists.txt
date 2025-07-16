@@ -1,12 +1,14 @@
 project(test)
 
 find_package(spdlog REQUIRED)
+find_package(benchmark REQUIRED)
 
 add_executable(test test.cpp)
 
 target_link_libraries(test PRIVATE 
     common
     spdlog::spdlog
+    benchmark::benchmark
 )
 
 target_include_directories(test PRIVATE 

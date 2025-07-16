@@ -3,8 +3,9 @@
 #include <taskflow.hpp>  // Taskflow is header-only
 #include "argparse.hpp"
 #include "common.h"
-#include "logger.hpp"
 #include "json.hpp"
+#include "logger.hpp"
+#include "benchmark/benchmark.h"
 
 int main1(int argc, char* argv[]) {
   argparse::ArgumentParser program("program_name");
@@ -95,9 +96,7 @@ int test_taskflow() {
   return 0;
 }
 
-
-
-int main() {
+int test_json() {
   using json = nlohmann::json;
 
   json person = {{"name", "Alice"},
@@ -124,3 +123,28 @@ int main() {
 
   return 0;
 }
+
+//int main(int argc, char** argv) {
+//  std::cout << "Args:\n";
+//  for (int i = 0; i < argc; ++i) {
+//    std::cout << "  argv[" << i << "] = " << argv[i] << std::endl;
+//  }
+//  benchmark::Initialize(&argc, argv);
+//  benchmark::RunSpecifiedBenchmarks();
+//}
+
+void SomeFunction() {
+  std::vector<double> v(1000);
+  for (int i = 0; i < 1000; ++i) {
+    v[i] = std::sin(i) * std::cos(i);
+  }
+}
+
+static void BM_SomeFunction(benchmark::State& state) {
+  for (auto _ : state) {
+    SomeFunction();
+  }
+}
+
+BENCHMARK(BM_SomeFunction);
+BENCHMARK_MAIN();

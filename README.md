@@ -7,3 +7,5 @@
 [spdlog_wrapper](https://github.com/gqw/spdlog_wrapper)
 
 [taskflow](https://github.com/taskflow/taskflow)
+
+[nlohmann json](https://github.com/nlohmann/json)
