@@ -48,7 +48,7 @@ class JsonConfig {
       std::ofstream out(filename);
       if (!out.is_open())
         return false;
-      out << j.dump(4);  // 4 空格缩进
+      out << j.dump(2);  // 4 空格缩进
       return true;
     } catch (...) { return false; }
   }
