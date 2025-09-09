@@ -1,26 +1,25 @@
-project(test)
-
 find_package(spdlog REQUIRED)
 find_package(benchmark REQUIRED)
 
-add_executable(test test.cpp)
-
-target_link_libraries(test PRIVATE 
-    common
-    spdlog::spdlog
-    benchmark::benchmark
+function(add_my_test name source)
+    add_executable(${name} ${source})
+    target_link_libraries(${name} PRIVATE common spdlog::spdlog benchmark::benchmark)
+    target_include_directories(${name} PRIVATE 
+        ${SOURCE_DIR}/src
+        ${SOURCE_DIR}/src/common
+        ${SOURCE_DIR}/test
+    )
+    target_compile_features(${name} PRIVATE cxx_std_17)
+    target_compile_definitions(${name} PRIVATE
+        _UNICODE
+        UNICODE
+        _BIND_TO_CURRENT_VCLIBS_VERSION=1
+    )
+    set_target_properties(${name}  PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${name}>"
 )
+endfunction()
 
-target_include_directories(test PRIVATE 
-    ${SOURCE_DIR}/src
-    ${SOURCE_DIR}/src/common
-    ${SOURCE_DIR}/test
-)
-
-target_compile_features(test PRIVATE cxx_std_17)
-
-target_compile_definitions(test PRIVATE
-    _UNICODE
-    UNICODE
-    _BIND_TO_CURRENT_VCLIBS_VERSION=1
-)
+add_my_test(test  test.cpp)
+add_my_test(test2 test2.cpp)
+add_my_test(test3 test3.cpp)
