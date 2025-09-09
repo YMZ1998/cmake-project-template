@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 cmake_policy(SET CMP0079 NEW)
 
+set(CMAKE_TOOLCHAIN_FILE "D:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+
 project(cmake-project-template LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
