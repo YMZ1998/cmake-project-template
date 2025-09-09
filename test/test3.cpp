@@ -85,6 +85,9 @@ class ProcessHelper {
 // ====================== Ê¹ÓÃÊ¾Àý ======================
 
 int main() {
+  using Clock = std::chrono::steady_clock;
+  auto t_start = Clock::now();
+
   fs::path dir = "C:/Users/Admin/Desktop/cbct2ct";
 
   if (ProcessHelper::prepareDirectory(dir)) {
@@ -108,6 +111,12 @@ int main() {
   } else {
     std::cout << "Directory is not empty: " << dir << "\n";
   }
+
+  auto t_end = Clock::now();
+  auto elapsed_ms =
+      std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+          .count();
+  std::cout << "Total elapsed time: " << elapsed_ms << " ms\n";
 
   return 0;
 }
