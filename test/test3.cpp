@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 class ProcessHelper {
  public:
   // 清空或创建目录
-  static bool prepareDirectory(const fs::path& dir) {
+  static bool PrepareDirectory(const fs::path& dir) {
     try {
       if (fs::exists(dir)) {
         for (auto& entry : fs::directory_iterator(dir)) {
@@ -27,7 +27,7 @@ class ProcessHelper {
   }
 
   // 检查目录是否为空
-  static bool isDirectoryEmpty(const fs::path& dir) {
+  static bool IsDirectoryEmpty(const fs::path& dir) {
     try {
       if (!fs::exists(dir)) {
         std::cerr << "Directory does not exist: " << dir << "\n";
@@ -41,9 +41,9 @@ class ProcessHelper {
   }
 
   // 等待目录变空（带超时）
-  static bool waitUntilEmpty(const fs::path& dir, int timeout_ms = 5000) {
+  static bool WaitUntilEmpty(const fs::path& dir, int timeout_ms = 5000) {
     auto start = std::chrono::steady_clock::now();
-    while (!isDirectoryEmpty(dir)) {
+    while (!IsDirectoryEmpty(dir)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
       auto now = std::chrono::steady_clock::now();
       if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start)
@@ -55,7 +55,7 @@ class ProcessHelper {
   }
 
   // 运行外部 exe
-  static bool runExe(const std::string& exePath,
+  static bool RunExe(const std::string& exePath,
                      const std::vector<std::string>& args) {
     STARTUPINFOA si{};
     PROCESS_INFORMATION pi{};
@@ -90,11 +90,11 @@ int main() {
 
   fs::path dir = "C:/Users/Admin/Desktop/cbct2ct";
 
-  if (ProcessHelper::prepareDirectory(dir)) {
+  if (ProcessHelper::PrepareDirectory(dir)) {
     std::cout << "Directory ready: " << dir << "\n";
   }
 
-  if (!ProcessHelper::waitUntilEmpty(dir, 5000)) {
+  if (!ProcessHelper::WaitUntilEmpty(dir, 5000)) {
     std::cout << "Timeout waiting for empty directory: " << dir << "\n";
   }
 
@@ -102,11 +102,11 @@ int main() {
   std::vector<std::string> args = {"-s", "127.0.0.1:50051", "-m", "cbct2ct",
                                    "-p", "param.json"};
 
-  if (ProcessHelper::runExe(exePath, args)) {
+  if (ProcessHelper::RunExe(exePath, args)) {
     std::cout << "Process finished!\n";
   }
 
-  if (ProcessHelper::isDirectoryEmpty(dir)) {
+  if (ProcessHelper::IsDirectoryEmpty(dir)) {
     std::cout << "Directory is empty: " << dir << "\n";
   } else {
     std::cout << "Directory is not empty: " << dir << "\n";
