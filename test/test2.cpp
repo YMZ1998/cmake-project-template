@@ -78,6 +78,8 @@ int main() {
 
   // ÐÞ¸ÄºóÐ´»Ø
   info.series_num += 1;
+  info.code_type = "hn";
+  info.input_dir = "C:/Users/Admin/Desktop/export-patient";
   if (JsonConfig::write("param_new.json", info)) {
     std::cout << "JSON written successfully\n";
   }

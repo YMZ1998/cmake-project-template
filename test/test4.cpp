@@ -8,7 +8,9 @@
 #include <vector>
 
 using ordered_json = nlohmann::ordered_json;
+namespace fs = std::filesystem;
 
+// ====================== 数据结构 ======================
 struct SeriesInfo {
   int series_num = 101;
   std::string series_desc = "test";
@@ -17,10 +19,10 @@ struct SeriesInfo {
   std::string output_dir = "C:/Users/Admin/Desktop/cbct2ct";
 };
 
+// ====================== JSON 配置管理 ======================
 class JsonConfig {
  public:
-  // 从文件读取 JSON（保持顺序）
-  static bool read(const std::string& filename, SeriesInfo& info) {
+  static bool Read(const std::string& filename, SeriesInfo& info) {
     try {
       std::ifstream in(filename);
       if (!in.is_open())
@@ -34,13 +36,11 @@ class JsonConfig {
       info.code_type = j.value("code_type", "");
       info.input_dir = j.value("input_dir", "");
       info.output_dir = j.value("output_dir", "");
-
       return true;
     } catch (...) { return false; }
   }
 
-  // 写入 JSON 文件（保持顺序）
-  static bool write(const std::string& filename, const SeriesInfo& info) {
+  static bool Write(const std::string& filename, const SeriesInfo& info) {
     try {
       ordered_json j;
       j["series_num"] = info.series_num;
@@ -52,28 +52,25 @@ class JsonConfig {
       std::ofstream out(filename);
       if (!out.is_open())
         return false;
-      out << j.dump(2);  // 4 空格缩进
+      out << j.dump(2);
       return true;
     } catch (...) { return false; }
   }
 
-  // 转 JSON 字符串（保持顺序）
-  static std::string to_json_string(const SeriesInfo& info) {
+  static std::string ToJsonString(const SeriesInfo& info) {
     ordered_json j;
     j["series_num"] = info.series_num;
     j["series_desc"] = info.series_desc;
     j["code_type"] = info.code_type;
     j["input_dir"] = info.input_dir;
     j["output_dir"] = info.output_dir;
-    return j.dump(4);
+    return j.dump(2);
   }
 };
 
-namespace fs = std::filesystem;
-
-class ProcessHelper {
+// ====================== 目录和进程工具类 ======================
+class ProcessUtils {
  public:
-  // 清空或创建目录
   static bool PrepareDirectory(const fs::path& dir) {
     try {
       if (fs::exists(dir)) {
@@ -90,21 +87,15 @@ class ProcessHelper {
     }
   }
 
-  // 检查目录是否为空
   static bool IsDirectoryEmpty(const fs::path& dir) {
     try {
       if (!fs::exists(dir)) {
-        std::cerr << "Directory does not exist: " << dir << "\n";
         return true;
       }
       return fs::is_empty(dir);
-    } catch (const fs::filesystem_error& e) {
-      std::cerr << "Filesystem error: " << e.what() << "\n";
-      return false;
-    }
+    } catch (...) { return false; }
   }
 
-  // 等待目录变空（带超时）
   static bool WaitUntilEmpty(const fs::path& dir, int timeout_ms = 5000) {
     auto start = std::chrono::steady_clock::now();
     while (!IsDirectoryEmpty(dir)) {
@@ -118,29 +109,23 @@ class ProcessHelper {
     return true;
   }
 
-  // 运行外部 exe
-  static bool RunExe(const std::string& exePath,
+  static bool RunExe(const std::string& exe_path,
                      const std::vector<std::string>& args) {
     STARTUPINFOA si{};
     PROCESS_INFORMATION pi{};
     si.cb = sizeof(si);
 
-    //char commandLine[1024];
-    //sprintf_s(commandLine, "%s -s %s -m %s -p %s", exePath.c_str(), "127.0.0.1:50051",
-    //          "cbct2ct",
-    //          "param.json");
-
-    std::string cmdline = exePath;
-    for (const auto& a : args) {
-      cmdline += " " + a;
+    std::string cmdline = exe_path;
+    for (const auto& arg : args) {
+      cmdline += " " + arg;
     }
 
     std::cout << "cmdline: " << cmdline << std::endl;
 
     std::vector<char> cmd(cmdline.begin(), cmdline.end());
-    cmd.push_back('\0');  // null-terminated
+    cmd.push_back('\0');
 
-    if (CreateProcessA(exePath.c_str(), cmd.data(), NULL, NULL, FALSE, 0, NULL,
+    if (CreateProcessA(exe_path.c_str(), cmd.data(), NULL, NULL, FALSE, 0, NULL,
                        NULL, &si, &pi)) {
       WaitForSingleObject(pi.hProcess, INFINITE);
       CloseHandle(pi.hProcess);
@@ -153,52 +138,83 @@ class ProcessHelper {
   }
 };
 
-// ====================== 使用示例 ======================
+// ====================== CBCT 转 CT 工作流类 ======================
+class CbctToCtWorkflow {
+ public:
+  explicit CbctToCtWorkflow(std::string exe_path,
+                            std::string param_file = "param.json")
+      : exe_path_(std::move(exe_path)), param_file_(std::move(param_file)) {}
 
+  void SetSeriesInfo(const SeriesInfo& info) { info_ = info; }
+
+  bool Run() {
+    using Clock = std::chrono::steady_clock;
+    auto t_start = Clock::now();
+
+    // Step 1: 写 JSON 参数文件
+    if (!JsonConfig::Write(param_file_, info_)) {
+      std::cerr << "Failed to write param file: " << param_file_ << "\n";
+      return false;
+    }
+
+    // Step 2: 准备输出目录
+    fs::path dir = info_.output_dir;
+    if (!ProcessUtils::PrepareDirectory(dir)) {
+      return false;
+    }
+
+    if (!ProcessUtils::WaitUntilEmpty(dir, 5000)) {
+      std::cerr << "Timeout waiting for empty directory\n";
+      return false;
+    }
+
+    // Step 3: 运行外部 EXE
+    std::vector<std::string> args = {"-s", "127.0.0.1:50051", "-m", "cbct2ct",
+                                     "-p", param_file_};
+
+    if (!ProcessUtils::RunExe(exe_path_, args)) {
+      return false;
+    }
+
+    // Step 4: 检查输出
+    if (ProcessUtils::IsDirectoryEmpty(dir)) {
+      std::cerr << "Output directory is empty: " << dir << "\n";
+      return false;
+    }
+
+    auto t_end = Clock::now();
+    auto elapsed_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+            .count();
+    std::cout << "Workflow finished in " << elapsed_ms << " ms\n";
+
+    return true;
+  }
+
+ private:
+  SeriesInfo info_;
+  std::string exe_path_;
+  std::string param_file_;
+};
+
+// ====================== 示例 ======================
 int main() {
   SeriesInfo info;
-  std::cout << JsonConfig::to_json_string(info) << std::endl;
-
-  info.series_num += 1;
+  info.series_num = 102;
+  info.series_desc = "HN case";
   info.code_type = "hn";
   info.input_dir = "C:/Users/Admin/Desktop/export-patient";
-  if (JsonConfig::write("param_new.json", info)) {
-    std::cout << JsonConfig::to_json_string(info) << std::endl;
-    std::cout << "JSON written successfully\n";
-  }
+  info.output_dir = "C:/Users/Admin/Desktop/cbct2ct";
 
-  using Clock = std::chrono::steady_clock;
-  auto t_start = Clock::now();
+  CbctToCtWorkflow workflow("D:\\icbct\\CBCT2CT-SDK\\algo-Client.exe",
+                            "param_new.json");
+  workflow.SetSeriesInfo(info);
 
-  fs::path dir = "C:/Users/Admin/Desktop/cbct2ct";
-
-  if (ProcessHelper::PrepareDirectory(dir)) {
-    std::cout << "Directory ready: " << dir << "\n";
-  }
-
-  if (!ProcessHelper::WaitUntilEmpty(dir, 5000)) {
-    std::cout << "Timeout waiting for empty directory: " << dir << "\n";
-  }
-
-  std::string exePath = "D:\\icbct\\CBCT2CT-SDK\\algo-Client.exe";
-  std::vector<std::string> args = {"-s", "127.0.0.1:50051", "-m", "cbct2ct",
-                                   "-p", "param_new.json"};
-
-  if (ProcessHelper::RunExe(exePath, args)) {
-    std::cout << "Process finished!\n";
-  }
-
-  if (ProcessHelper::IsDirectoryEmpty(dir)) {
-    std::cout << "Directory is empty: " << dir << "\n";
+  if (workflow.Run()) {
+    std::cout << "CBCT → CT workflow succeeded\n";
   } else {
-    std::cout << "Directory is not empty: " << dir << "\n";
+    std::cout << "CBCT → CT workflow failed\n";
   }
-
-  auto t_end = Clock::now();
-  auto elapsed_ms =
-      std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
-          .count();
-  std::cout << "Total elapsed time: " << elapsed_ms << " ms\n";
 
   return 0;
 }
