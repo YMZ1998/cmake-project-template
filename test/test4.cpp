@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 
-using ordered_json = nlohmann::ordered_json;
+using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 // ====================== 数据结构 ======================
@@ -28,7 +28,7 @@ class JsonConfig {
       if (!in.is_open())
         return false;
 
-      ordered_json j;
+      json j;
       in >> j;
 
       info.series_num = j.value("series_num", 0);
@@ -42,7 +42,7 @@ class JsonConfig {
 
   static bool Write(const std::string& filename, const SeriesInfo& info) {
     try {
-      ordered_json j;
+      json j;
       j["series_num"] = info.series_num;
       j["series_desc"] = info.series_desc;
       j["code_type"] = info.code_type;
@@ -58,7 +58,7 @@ class JsonConfig {
   }
 
   static std::string ToJsonString(const SeriesInfo& info) {
-    ordered_json j;
+    json j;
     j["series_num"] = info.series_num;
     j["series_desc"] = info.series_desc;
     j["code_type"] = info.code_type;
@@ -109,6 +109,15 @@ class ProcessUtils {
     return true;
   }
 
+  static std::string GetExeDirectory() {
+    char buffer[MAX_PATH] = {0};
+    if (GetModuleFileNameA(NULL, buffer, MAX_PATH) == 0) {
+      return "";  // 获取失败
+    }
+    fs::path exe_path(buffer);
+    return exe_path.parent_path().string();
+  }
+
   static bool RunExe(const std::string& exe_path,
                      const std::vector<std::string>& args) {
     STARTUPINFOA si{};
@@ -147,28 +156,54 @@ class CbctToCtWorkflow {
 
   void SetSeriesInfo(const SeriesInfo& info) { info_ = info; }
 
+  // 清理输入目录
+  bool ClearInputDirectory() {
+    if (!ProcessUtils::PrepareDirectory(info_.input_dir)) {
+      std::cerr << "Failed to prepare input directory: " << info_.input_dir
+                << "\n";
+      return false;
+    }
+
+    if (!ProcessUtils::WaitUntilEmpty(info_.input_dir, 5000)) {
+      std::cerr << "Timeout waiting for empty input directory: "
+                << info_.input_dir << "\n";
+      return false;
+    }
+
+    return true;
+  }
+
+  // 清理输出目录
+  bool ClearOutputDirectory() {
+    if (!ProcessUtils::PrepareDirectory(info_.output_dir)) {
+      std::cerr << "Failed to prepare output directory: " << info_.output_dir
+                << "\n";
+      return false;
+    }
+
+    if (!ProcessUtils::WaitUntilEmpty(info_.output_dir, 5000)) {
+      std::cerr << "Timeout waiting for empty output directory: "
+                << info_.output_dir << "\n";
+      return false;
+    }
+
+    return true;
+  }
+
   bool Run() {
     using Clock = std::chrono::steady_clock;
     auto t_start = Clock::now();
 
-    // Step 1: 写 JSON 参数文件
     if (!JsonConfig::Write(param_file_, info_)) {
       std::cerr << "Failed to write param file: " << param_file_ << "\n";
       return false;
     }
 
-    // Step 2: 准备输出目录
-    fs::path dir = info_.output_dir;
-    if (!ProcessUtils::PrepareDirectory(dir)) {
+    if (!ClearOutputDirectory()) {
+      std::cerr << "Failed to clear output directory\n";
       return false;
     }
 
-    if (!ProcessUtils::WaitUntilEmpty(dir, 5000)) {
-      std::cerr << "Timeout waiting for empty directory\n";
-      return false;
-    }
-
-    // Step 3: 运行外部 EXE
     std::vector<std::string> args = {"-s", "127.0.0.1:50051", "-m", "cbct2ct",
                                      "-p", param_file_};
 
@@ -176,9 +211,8 @@ class CbctToCtWorkflow {
       return false;
     }
 
-    // Step 4: 检查输出
-    if (ProcessUtils::IsDirectoryEmpty(dir)) {
-      std::cerr << "Output directory is empty: " << dir << "\n";
+    if (ProcessUtils::IsDirectoryEmpty(info_.output_dir)) {
+      std::cerr << "Output directory is empty: " << info_.output_dir << "\n";
       return false;
     }
 
@@ -199,15 +233,18 @@ class CbctToCtWorkflow {
 
 // ====================== 示例 ======================
 int main() {
+  std::string exe_dir = ProcessUtils::GetExeDirectory();
+  std::cout << "Executable directory: " << exe_dir << std::endl;
+
+  std::string param_file = exe_dir + "\\param.json";
+
   SeriesInfo info;
-  info.series_num = 102;
-  info.series_desc = "HN case";
   info.code_type = "hn";
   info.input_dir = "C:/Users/Admin/Desktop/export-patient";
-  info.output_dir = "C:/Users/Admin/Desktop/cbct2ct";
+  info.output_dir = exe_dir + "/cbct2ct";
 
   CbctToCtWorkflow workflow("D:\\icbct\\CBCT2CT-SDK\\algo-Client.exe",
-                            "param_new.json");
+                            param_file);
   workflow.SetSeriesInfo(info);
 
   if (workflow.Run()) {
