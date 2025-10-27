@@ -1,4 +1,4 @@
-# cmake project template
+# [cmake project template](https://github.com/YMZ1998/cmake-project-template)
 
 [argparse](https://github.com/p-ranav/argparse)
 
@@ -11,3 +11,7 @@
 [nlohmann json](https://github.com/nlohmann/json)
 
 [benchmark](https://github.com/google/benchmark)
+
+## TODO:
+
+[ceres-solver](https://github.com/ceres-solver/ceres-solver)
