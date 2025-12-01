@@ -9,18 +9,16 @@ function(add_my_test name source)
         ${SOURCE_DIR}/src/common
         ${SOURCE_DIR}/test
     )
-    target_compile_features(${name} PRIVATE cxx_std_17)
-    target_compile_definitions(${name} PRIVATE
-        _UNICODE
-        UNICODE
-        _BIND_TO_CURRENT_VCLIBS_VERSION=1
-    )
-    set_target_properties(${name}  PROPERTIES
-    VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${name}>"
-)
 endfunction()
 
-add_my_test(test  test.cpp)
-add_my_test(test2 test2.cpp)
-add_my_test(test3 test3.cpp)
-add_my_test(test4 test4.cpp)
+file(GLOB TEST_SRCS "*.cpp")
+
+foreach(src_file IN LISTS TEST_SRCS)
+    get_filename_component(name ${src_file} NAME_WE)
+    add_my_test(${name} ${src_file})
+    set_target_properties(${name} PROPERTIES FOLDER "test")
+    message(STATUS "Added test target: ${name}")
+endforeach()
+
+source_group("Source Files" FILES ${TEST_SRCS})
+
