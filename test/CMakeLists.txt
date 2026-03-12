@@ -1,9 +1,10 @@
 find_package(spdlog REQUIRED)
 find_package(benchmark REQUIRED)
+find_package(miniocpp REQUIRED)
 
 function(add_my_test name source)
     add_executable(${name} ${source})
-    target_link_libraries(${name} PRIVATE common spdlog::spdlog benchmark::benchmark)
+    target_link_libraries(${name} PRIVATE common spdlog::spdlog benchmark::benchmark  miniocpp::miniocpp)
     target_include_directories(${name} PRIVATE 
         ${SOURCE_DIR}/src
         ${SOURCE_DIR}/src/common
