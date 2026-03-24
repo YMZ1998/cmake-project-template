@@ -1,33 +1,25 @@
+include(${SOURCE_DIR}/cmake/ProjectTargetHelpers.cmake)
+
 set(EXAMPLE_COMMON_INCLUDE_DIRS
     ${SOURCE_DIR}/src
     ${SOURCE_DIR}/src/common
     ${SOURCE_DIR}/examples
 )
 
-function(add_project_example name source)
-    add_executable(${name} ${source})
-    target_link_libraries(${name} PRIVATE common)
-    target_include_directories(${name} PRIVATE ${EXAMPLE_COMMON_INCLUDE_DIRS})
-    set_target_properties(${name} PROPERTIES FOLDER "examples")
-endfunction()
-
 find_package(spdlog REQUIRED)
 find_package(benchmark REQUIRED)
 
-file(GLOB EXAMPLE_SRCS CONFIGURE_DEPENDS "*.cpp")
-
-foreach(example_src IN LISTS EXAMPLE_SRCS)
-    get_filename_component(example_name ${example_src} NAME_WE)
-
-    if(example_name STREQUAL "test")
-        set(example_target "example_benchmark")
-    else()
-        set(example_target ${example_name})
+function(configure_example_target source_stem target_name)
+    if(source_stem STREQUAL "test")
+        target_link_libraries(${target_name} PRIVATE spdlog::spdlog benchmark::benchmark)
     endif()
+endfunction()
 
-    add_project_example(${example_target} ${example_src})
-
-    if(example_name STREQUAL "test")
-        target_link_libraries(${example_target} PRIVATE spdlog::spdlog benchmark::benchmark)
-    endif()
-endforeach()
+project_add_cpp_targets(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    FOLDER "examples"
+    INCLUDE_DIRS ${EXAMPLE_COMMON_INCLUDE_DIRS}
+    LINK_LIBS common
+    TARGET_NAME_OVERRIDES "test=example_benchmark"
+    CONFIGURE_CALLBACK configure_example_target
+)
