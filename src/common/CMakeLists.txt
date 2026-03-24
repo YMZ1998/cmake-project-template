@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 set(LIBRARY_NAME "common")
-project(${LIBRARY_NAME})
+project(${LIBRARY_NAME} LANGUAGES CXX CUDA)
 
 find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)

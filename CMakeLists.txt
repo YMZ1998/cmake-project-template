@@ -28,8 +28,11 @@ include_directories(${3rdparty}/nlohmann)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(MSVC)
-  add_compile_options(/MP /wd4251)
-
+  # 只给 C++ 用 /MP，不给 CUDA
+  add_compile_options(
+    $<$<COMPILE_LANGUAGE:CXX>:/MP>
+    $<$<COMPILE_LANGUAGE:CXX>:/wd4251>
+  )
   foreach(config DEBUG RELEASE RELWITHDEBINFO)
     string(TOUPPER "${config}" CONFIG_UPPER)
     if(CONFIG_UPPER STREQUAL "DEBUG")
