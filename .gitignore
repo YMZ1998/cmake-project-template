@@ -1,3 +1,5 @@
 build/
 output/
 build_stage1_check/
+build_stage2_check/
+build_*/

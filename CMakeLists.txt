@@ -72,9 +72,13 @@ set(CUDA_NVCC_FLAGS_DEBUG   "-G -g -Xcompiler=\"/MDd\"")
 add_subdirectory(src)
 
 option(BUILD_EXAMPLES "Build example executables" ON)
-option(BUILD_INTEGRATION_TESTS "Build integration and environment-dependent checks" OFF)
-if(BUILD_EXAMPLES OR BUILD_INTEGRATION_TESTS)
-  add_subdirectory(test)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+
+option(BUILD_INTEGRATION_TESTS "Build integration and environment-dependent checks" ON)
+if(BUILD_INTEGRATION_TESTS)
+  add_subdirectory(integration_tests)
 endif()
 
 option(BUILD_UNIT_TESTS "Build unit tests" ON)
