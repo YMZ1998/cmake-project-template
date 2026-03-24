@@ -1,15 +1,23 @@
 cmake_minimum_required(VERSION 3.18)
 cmake_policy(SET CMP0079 NEW)
 
-set(CMAKE_TOOLCHAIN_FILE "D:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+set(DEFAULT_VCPKG_TOOLCHAIN "D:/vcpkg/scripts/buildsystems/vcpkg.cmake")
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND EXISTS "${DEFAULT_VCPKG_TOOLCHAIN}")
+  set(CMAKE_TOOLCHAIN_FILE "${DEFAULT_VCPKG_TOOLCHAIN}" CACHE STRING "Path to the vcpkg toolchain file")
+endif()
 
 project(cmake-project-template LANGUAGES CXX CUDA)
+
+include(CTest)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
 set(CMAKE_BUILD_TYPE Release CACHE STRING "")
 
 set(PROJECT_OUTPUT_DIR "${CMAKE_BINARY_DIR}/../output")
@@ -19,16 +27,15 @@ endforeach()
 
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(3rdparty ${PROJECT_SOURCE_DIR}/3rdparty)
-message(STATUS "3rdparty: ${3rdparty}")
+set(PROJECT_THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/3rdparty)
+message(STATUS "3rdparty: ${PROJECT_THIRDPARTY_DIR}")
 
-include_directories(${3rdparty}/taskflow)
-include_directories(${3rdparty}/nlohmann)
+include_directories(${PROJECT_THIRDPARTY_DIR}/taskflow)
+include_directories(${PROJECT_THIRDPARTY_DIR}/nlohmann)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(MSVC)
-  # 只给 C++ 用 /MP，不给 CUDA
   add_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:/MP>
     $<$<COMPILE_LANGUAGE:CXX>:/wd4251>
@@ -64,12 +71,13 @@ set(CUDA_NVCC_FLAGS_DEBUG   "-G -g -Xcompiler=\"/MDd\"")
 
 add_subdirectory(src)
 
-option(build_test "Build test" ON)
-if(build_test)
+option(BUILD_EXAMPLES "Build example executables" ON)
+option(BUILD_INTEGRATION_TESTS "Build integration and environment-dependent checks" OFF)
+if(BUILD_EXAMPLES OR BUILD_INTEGRATION_TESTS)
   add_subdirectory(test)
 endif()
 
-option(build_unit_tests "Build unit_tests" ON)
-if(build_unit_tests)
+option(BUILD_UNIT_TESTS "Build unit tests" ON)
+if(BUILD_UNIT_TESTS)
   add_subdirectory(unit_tests)
 endif()

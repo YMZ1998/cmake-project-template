@@ -1,10 +1,9 @@
-set(dir "${CMAKE_SOURCE_DIR}/unit_tests")
+set(dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
 message("unit_tests dir: ${dir}")
-file(GLOB unit_tests_src
-    "${dir}/*.cpp"
-    "${dir}/src/*.cpp"
+set(unit_tests_src
+    "${dir}/main.cpp"
+    "${dir}/src/test.cpp"
 )
 
 message("unit_tests_src: ${unit_tests_src}")
-
